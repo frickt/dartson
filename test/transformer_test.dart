@@ -6,7 +6,7 @@ import '../lib/transformer.dart';
 
 import 'package:analyzer/src/generated/ast.dart';
 import 'package:path/path.dart' as p;
-import 'package:unittest/unittest.dart';
+import 'package:test/test.dart';
 
 String get _testDirPath => p.dirname(p.fromUri(Platform.script));
 
@@ -28,10 +28,10 @@ void main() {
     }), true);
   });
 
-  skip_test('should find a SimpleIdentifier prefix for the dartson import', () {
+  test('should find a SimpleIdentifier prefix for the dartson import', () {
     expect(compiler.findDartsonImportName() != null, true);
     expect(compiler.findDartsonImportName().toString(), 'ddd');
-  });
+  }, skip: true);
 
   test('should show the metadata', () {
     simpleClass = compiler.compilationUnit.declarations.firstWhere(
