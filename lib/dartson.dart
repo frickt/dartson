@@ -114,17 +114,28 @@ class Dartson<T> {
       return transformer.encode(object);
     } else {
       Map result = new Map<String, Object>();
-      reflectee.type.declarations.forEach((sym, decl) {
-        if (!decl.isPrivate &&
-            ((decl is VariableMirror && !decl.isConst && !decl.isStatic) ||
-                (decl is MethodMirror && decl.isGetter))) {
-          _setField(sym, decl, reflectee, result);
-        }
-      });
+
+      var type = reflectee.type;
+      while(type.superclass != null){
+        result.addAll(_extractFields(reflectee, type));
+        type = type.superclass;
+      }
 
       _log.finer("Serialization completed.");
       return result;
     }
+  }
+
+  Map<String, Object> _extractFields(InstanceMirror reflectee, ClassMirror type){
+    Map result = new Map<String, Object>();
+    type.declarations.forEach((sym, decl) {
+      if (!decl.isPrivate &&
+      ((decl is VariableMirror && !decl.isConst && !decl.isStatic) ||
+      (decl is MethodMirror && decl.isGetter))) {
+        _setField(sym, decl, reflectee, result);
+      }
+    });
+    return result;
   }
 
   /// Checks the DeclarationMirror [variable] for annotations and adds
@@ -157,39 +168,43 @@ class Dartson<T> {
   void _fillObject(InstanceMirror objMirror, Map filler) {
     ClassMirror classMirror = objMirror.type;
 
-    classMirror.declarations.forEach((sym, decl) {
-      if (!decl.isPrivate &&
-          ((decl is VariableMirror && !decl.isFinal && !decl.isConst) ||
-              decl is MethodMirror)) {
-        String varName = _getName(sym);
-        String fieldName = varName;
-        TypeMirror valueType;
+    while(classMirror.superclass != null){
+      classMirror.declarations.forEach((sym, decl) {
+        if (!decl.isPrivate &&
+        ((decl is VariableMirror && !decl.isFinal && !decl.isConst) ||
+        decl is MethodMirror)) {
+          String varName = _getName(sym);
+          String fieldName = varName;
+          TypeMirror valueType;
 
-        // if it's a setter function we need to change the name
-        if (decl is MethodMirror && decl.isSetter) {
-          fieldName = varName = varName.substring(0, varName.length - 1);
-          _log.finer('Found setter function varName: ' + varName);
-          valueType = decl.parameters[0].type;
-        } else if (decl is VariableMirror) {
-          valueType = decl.type;
-        } else {
-          return;
-        }
+          // if it's a setter function we need to change the name
+          if (decl is MethodMirror && decl.isSetter) {
+            fieldName = varName = varName.substring(0, varName.length - 1);
+            _log.finer('Found setter function varName: ' + varName);
+            valueType = decl.parameters[0].type;
+          } else if (decl is VariableMirror) {
+            valueType = decl.type;
+          } else {
+            return;
+          }
 
-        // check if the property is renamed by DartsonProperty
-        Property prop = _getProperty(decl);
-        if (prop != null && prop.name != null) {
-          fieldName = prop.name;
-        }
+          // check if the property is renamed by DartsonProperty
+          Property prop = _getProperty(decl);
+          if (prop != null && prop.name != null) {
+            fieldName = prop.name;
+          }
 
-        _log.finer(
-            'Try to fill object with: ${fieldName}: ${filler[fieldName]}');
-        if (filler[fieldName] != null) {
-          objMirror.setField(new Symbol(varName),
-              _convertValue(valueType, filler[fieldName], varName));
+          _log.finer(
+              'Try to fill object with: ${fieldName}: ${filler[fieldName]}');
+          if (filler[fieldName] != null) {
+            objMirror.setField(new Symbol(varName),
+            _convertValue(valueType, filler[fieldName], varName));
+          }
         }
-      }
-    });
+      });
+      classMirror = classMirror.superclass;
+
+    }
 
     _log.fine("Filled object completly: ${filler}");
   }
