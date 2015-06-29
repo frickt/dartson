@@ -38,6 +38,17 @@ class ChildClass {
   DateTime dateTime;
 }
 
+@ddd.Entity()
+class SubClass extends ChildClass{
+  String name;
+
+  num id;
+
+  @ddd.Property(name: 'last_name')
+  String lastName;
+
+}
+
 class TestAnnotation {
   const TestAnnotation();
 }

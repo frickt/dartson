@@ -8,10 +8,12 @@ dependencies:
     path: ../../
   test: any
 transformers:
+- test/pub_serve:
+    $include: test/**_test{.*,}.dart
 - dartson
 - $dart2js:
     checked: true
-    minify: true
+    minify: false
     verbose: true
     suppressWarnings: false
     suppressHints: false

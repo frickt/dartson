@@ -210,6 +210,12 @@ class FileCompiler extends _ErrorCollector {
   List<PropertyDefinition> buildEntityMap(ClassDeclaration entity) {
     List<PropertyDefinition> list = [];
 
+    ExtendsClause extendsClause = entity.extendsClause;
+    if(extendsClause != null){
+      list.addAll(buildEntityMap(entities.firstWhere((searchEntity)
+        => searchEntity.name.name == extendsClause.superclass.name.name)));
+    }
+
     entity.members.forEach((ClassMember member) {
       if (member is FieldDeclaration) {
         Property dartEnt = _findDartsonProperty(member.metadata);

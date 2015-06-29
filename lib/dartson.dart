@@ -5,6 +5,7 @@ import 'package:logging/logging.dart';
 export 'src/annotations.dart';
 import 'src/annotations.dart';
 import './type_transformer.dart';
+import './entity_mapper.dart';
 
 @MirrorsUsed(metaTargets: const [Property], override: '*')
 import 'dart:mirrors';
@@ -31,7 +32,7 @@ class Dartson<T> {
   factory Dartson.JSON([String identifier = 'dartson']) =>
       new Dartson(JSON, identifier);
 
-  /// Registers a [transformer] for the specific [type] to this darston instance.
+  /// Registers a [transformer] for the specific [type] to this dartson instance.
   addTransformer(TypeTransformer transformer, Type type) {
     _transformers[_getName(reflectType(type).qualifiedName)] = transformer;
   }
@@ -77,6 +78,41 @@ class Dartson<T> {
     } else {
       return _serializeObject(object);
     }
+  }
+
+  /// Decodes the [endoded] object (for example a JSON encoded string) using
+  /// the [_codec] and then uses [map] to map it onto the [object].
+  Object decodeFromEntityMapper(T encoded, EntityMapperFactory mapper, String classKey) {
+    var decodedMap = _codec.decode(encoded);
+    var object = mapper.getInstance(decodedMap[classKey]);
+    return map(_codec.decode(encoded), object);
+  }
+
+  Object decodeFromClassKeyMirrorUsed(T encoded, String libraryToSearchFor, String classKey) {
+    var decodedMap = _codec.decode(encoded);
+    var object = createClassInstance(libraryToSearchFor, decodedMap[classKey]);
+    return map(_codec.decode(encoded), object);
+  }
+
+  Object createClassInstance(String libraryToSearchFor, String className){
+    final Symbol librarySymbol =  new Symbol(libraryToSearchFor);
+    final Symbol classSymbol = new Symbol(className);
+    final Symbol constructorSymbol = const Symbol("");
+
+    MirrorSystem mirrorSystem = currentMirrorSystem();
+
+    // Get LibraryMirror for Library foo_library.
+    // It returns an iterator, get the first LibraryMirror
+    LibraryMirror libraryMirror = mirrorSystem.findLibrary(librarySymbol);
+
+    // Get ClassMirror for Class Foo
+    ClassMirror classMirror = libraryMirror.declarations[classSymbol];
+
+    // Get the InstanceMirror using the default constructor
+    InstanceMirror testClassInstanceMirror = classMirror.newInstance(constructorSymbol, []);
+
+    //Get the reflectee object from the InstanceMirror
+    return testClassInstanceMirror.reflectee;
   }
 
   /// Decodes the [endoded] object (for example a JSON encoded string) using

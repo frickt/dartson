@@ -74,4 +74,18 @@ void main() {
     var newFile = new File(p.join(tempDir.path, 'part1_class.dart'));
     newFile.writeAsStringSync(newCode);
   });
+
+  test('fetch entity map from SubClass, super class fields have to be included.', () {
+    CompilationUnitMember subClass = compiler.compilationUnit.declarations.firstWhere(
+            (m) => m is ClassDeclaration && m.name.name == 'SubClass');
+    entityMap = compiler.buildEntityMap(subClass);
+    expect(entityMap.length, 7);
+    expect(entityMap[0].type, 'bool');
+    expect(entityMap[1].type, 'int');
+    expect(entityMap[2].type, 'String');
+    expect(entityMap[3].type, 'DateTime');
+    expect(entityMap[4].type, 'String');
+    expect(entityMap[5].type, 'num');
+    expect(entityMap[6].type, 'String');
+  });
 }

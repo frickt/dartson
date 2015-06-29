@@ -4,6 +4,7 @@ export 'src/annotations.dart';
 export 'src/static_entity.dart';
 import 'src/static_entity.dart';
 import './type_transformer.dart';
+import './entity_mapper.dart';
 
 import 'package:logging/logging.dart';
 import 'dart:convert' show Codec, JSON;
@@ -91,6 +92,15 @@ class Dartson extends TypeTransformerProvider {
       throw 'Unable to serialize none Dartson.Entity';
     }
   }
+
+  /// Decodes the [endoded] object (for example a JSON encoded string) using
+  /// the [_codec] and then uses [map] to map it onto the [object].
+  dynamic decodeFromEntityMapper(var encoded, EntityMapperFactory mapper, String classKey) {
+    var decodedMap = _codec.decode(encoded);
+    var object = mapper.getInstance(decodedMap[classKey]);
+    return map(_codec.decode(encoded), object);
+  }
+
 
   dynamic encode(Object clazz) {
     return _codec.encode(serialize(clazz));

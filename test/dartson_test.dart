@@ -3,6 +3,7 @@ library test_dartson;
 import '../lib/dartson.dart';
 import '../lib/type_transformer.dart';
 import 'package:test/test.dart';
+import '../lib/entity_mapper.dart';
 
 @MirrorsUsed(targets: const ['test_dartson'], override: '*')
 import 'dart:mirrors';
@@ -201,6 +202,18 @@ void main() {
     var str = dson.encode(obj);
     expect(str, '{"testDate":"${obj.testDate.toString()}"}');
   });
+
+  test('deserialize: subclass json string to subclass class', () {
+    var dson = new Dartson.JSON();
+    var jsonString = '{"@class":"SubModel","name":"test","wrong":null,"other":"renamed","children":[{"name":"child","timeline":4}],"age":32}';
+    Model model = dson.decodeFromEntityMapper(jsonString, new ModelFactory(), "@class");
+    expect(model.name ,"test");
+    expect(model.renamed, "renamed");
+    ModelChild modelChild = model.children.first;
+    expect(modelChild.name , "child");
+    expect(modelChild.timeline , 4);
+  });
+
 }
 
 class SimpleTransformer extends TypeTransformer<DateTime> {
@@ -290,4 +303,46 @@ class SimpleMap {
 
 class SimpleMapString {
   Map<String, num> map;
+}
+
+@Entity()
+class Model {
+  String name;
+  bool wrong;
+
+  @Property(ignore: true)
+  int ignored;
+
+  @Property(name: "other")
+  String renamed;
+
+  List<ModelChild> children = new List();
+
+  DateTime created;
+}
+
+@Entity()
+class ModelChild {
+  String name;
+  int timeline;
+}
+
+@Entity()
+class SubModel extends Model{
+
+  @Property(name:"age")
+  int age;
+}
+
+class ModelFactory extends EntityMapperFactory{
+  Object getInstance(String modelName){
+    switch (modelName) {
+      case 'SubModel':
+        return new SubModel();
+      case 'Model':
+        return new Model();
+      default:
+        throw new Exception("Unable to find Subclass: " + modelName);
+    }
+  }
 }

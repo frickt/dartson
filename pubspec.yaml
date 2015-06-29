@@ -14,3 +14,6 @@ dependencies:
 dev_dependencies:
   path: any
   test: any
+transformers:
+  - test/pub_serve:
+      $include: test/**_test{.*,}.dart
