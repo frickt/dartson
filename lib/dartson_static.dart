@@ -107,7 +107,17 @@ class Dartson extends TypeTransformerProvider {
   }
 
   dynamic decode(var encoded, Object object, [bool isList = false]) {
-    return map(_codec.decode(encoded), object, isList);
+    var decoded;
+      //already encoded.
+    if(encoded is Map) {
+      decoded = encoded;
+    } else {
+      decoded = _codec.decode(encoded);
+    }
+    if(hasTransformer(object.runtimeType)){
+      return getTransformer(object.runtimeType).decode(decoded);
+    }
+    return map(decoded, object, isList);
   }
 
   List _serializeList(List list) {
