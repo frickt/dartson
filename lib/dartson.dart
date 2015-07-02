@@ -41,6 +41,8 @@ class Dartson<T> {
   bool hasTransformer(Type type) =>
       _transformers[_getName(reflectType(type).qualifiedName)] != null;
 
+  TypeTransformer getTransformer(Type type) => _transformers[_getName(reflectType(type).qualifiedName)];
+
   /// Maps the values within [data] onto the [object] by reflecting the
   /// the type of object. The Class of [object] should have the [Entity]
   /// annotation to work properly when compiling to JavaScript.
@@ -118,6 +120,9 @@ class Dartson<T> {
   /// Decodes the [endoded] object (for example a JSON encoded string) using
   /// the [_codec] and then uses [map] to map it onto the [object].
   Object decode(T encoded, Object object, [bool isList = false]) {
+    if(hasTransformer(object.runtimeType)){
+      return getTransformer(object.runtimeType).decode(_codec.decode(encoded));
+    }
     return map(_codec.decode(encoded), object, isList);
   }
 

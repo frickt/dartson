@@ -205,8 +205,21 @@ void main() {
 
   test('deserialize: subclass json string to subclass class', () {
     var dson = new Dartson.JSON();
+    dson.addTransformer(new ModelTransformer(), Model);
     var jsonString = '{"@class":"SubModel","name":"test","wrong":null,"other":"renamed","children":[{"name":"child","timeline":4}],"age":32}';
-    Model model = dson.decodeFromEntityMapper(jsonString, new ModelFactory(), "@class");
+    Model model = dson.decode(jsonString, new Model());
+    expect(model.name ,"test");
+    expect(model.renamed, "renamed");
+    ModelChild modelChild = model.children.first;
+    expect(modelChild.name , "child");
+    expect(modelChild.timeline , 4);
+  });
+
+  test('deserialize: subclass json string to subclass class', () {
+    var dson = new Dartson.JSON();
+    dson.addTransformer(new ModelTransformer(), Model);
+    var jsonString = '{"@class":"SubModel","name":"test","wrong":null,"other":"renamed","children":[{"name":"child","timeline":4}],"age":32}';
+    SubModel model = dson.decode(jsonString, new Model());
     expect(model.name ,"test");
     expect(model.renamed, "renamed");
     ModelChild modelChild = model.children.first;
@@ -334,15 +347,28 @@ class SubModel extends Model{
   int age;
 }
 
-class ModelFactory extends EntityMapperFactory{
-  Object getInstance(String modelName){
-    switch (modelName) {
-      case 'SubModel':
-        return new SubModel();
-      case 'Model':
-        return new Model();
-      default:
-        throw new Exception("Unable to find Subclass: " + modelName);
-    }
+class ModelTransformer<Model> extends TypeTransformer{
+
+  dynamic encode(Object value) {
+    var dson = new Dartson.JSON();
+    return dson.encode(value);
   }
+
+  Model decode(dynamic value) {
+    var dson = new Dartson.JSON();
+    dson.addTransformer(new ModelTransformer(), Model);
+    if (value is Map) {
+      switch (value["@class"]) {
+        case 'SubModel':
+          return dson.map(value, new SubModel());
+        case 'Model':
+          return dson.map(value, new Model());
+        default:
+          throw new Exception("Unable to map SubClass: " + value["@class"]);
+      }
+    }
+    throw new Exception("Unable to map SubClass: value is not of Type Map");
+  }
+
+
 }
